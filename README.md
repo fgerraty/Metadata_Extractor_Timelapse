@@ -30,4 +30,8 @@ Unfortunately, video files do not store the same metadata as photos do and, as a
 
 # Problem 2: Metadata Capture from Images
 
-...working ....
+In many cases, metadata (date, time, etc.) can be extracted from camera trap images via exif metadata files. There are a variety of excellent tools that allow for you to extract exif data from individual photo files such as CamTrapR (<https://github.com/jniedballa/camtrapR>). However, in some cases (including when working with Browning Timelapse+ files), this exif metadata is lost and we need to retrieve metadata from the images themselves. Fortunately, most camera trap images contain key metadata within the image, which we can extract using optical character recognition using the *tessaract* package (<https://github.com/tesseract-ocr/tesseract>).
+
+For this guide, we will use data from one of my research projects examining marine mammal carrion scavenging assemblages along the California coast. Here is an example of a single frame extracted from one the the Browning Timelapse+ video files. Our goal is to extract the photo's date and time from the bottom right corner of the black panel at the bottom of the image.
+
+![The date and time of the photograph are in the bottom right corner.](data/extracted_images/sequence1/CCAM6_D1_00.jpg)
