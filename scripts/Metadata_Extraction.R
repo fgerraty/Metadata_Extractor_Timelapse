@@ -13,7 +13,10 @@ packages<- c("tidyverse", "lubridate", "magick", "tesseract")
 pacman::p_load(packages, character.only = TRUE); rm(packages)
 
 
-# Part 2: Load Packages --------------------------------------------------
+# Part 2: Prepare Extraction --------------------------------------------------
+
+sequence1_file_names <- dir("data/extracted_images/sequence1")
+
 
 
 photo  <- magick::image_read("data/extracted_images/sequence1/CCAM6_D1_00.jpg") # import image
