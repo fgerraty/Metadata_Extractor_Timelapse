@@ -30,8 +30,67 @@ Unfortunately, video files do not store the same metadata as photos do and, as a
 
 # Problem 2: Metadata Capture from Images
 
-In many cases, metadata (date, time, etc.) can be extracted from camera trap images via exif metadata files. There are a variety of excellent tools that allow for you to extract exif data from individual photo files such as CamTrapR (<https://github.com/jniedballa/camtrapR>). However, in some cases (including when working with Browning Timelapse+ files), this exif metadata is lost and we need to retrieve metadata from the images themselves. Fortunately, most camera trap images contain key metadata within the image, which we can extract using optical character recognition using the *tessaract* package (<https://github.com/tesseract-ocr/tesseract>).
+In many cases, metadata (date, time, etc.) can be extracted from camera trap images via exif metadata files. There are a variety of excellent tools that allow for you to extract exif data from individual photo files such as `camtrapR` (<https://github.com/jniedballa/camtrapR>). However, in some cases (including when working with Browning Timelapse+ files), this exif metadata is lost and we need to retrieve metadata from the images themselves. Fortunately, most camera trap images contain key metadata within the image, which we can extract using optical character recognition using the `tessaract` package (<https://github.com/tesseract-ocr/tesseract>).
 
-For this guide, we will use data from one of my research projects examining marine mammal carrion scavenging assemblages along the California coast. Here is an example of a single frame extracted from one the the Browning Timelapse+ video files. Our goal is to extract the photo's date and time from the bottom right corner of the black panel at the bottom of the image.
+For this guide, we will use data from one of my research projects examining marine mammal carrion scavenging assemblages along the California coast. Here is an example of a single frame extracted from one the the Browning Timelapse+ video files. Our goal is to extract the photo's date and time from the bottom right corner of the black panel at the bottom of the image. The image sequences we will be using (each is one full day of timelapse photos) are each in their own folder in the `data/extracted_images` directory of this repository.
 
-![The date and time of the photograph are in the bottom right corner.](data/extracted_images/sequence1/CCAM6_D1_00.jpg)
+![Note that the date and time of the photograph are in the bottom right corner.](data/extracted_images/sequence1/CCAM6_D1_00.jpg)
+
+There is an R script titled `Metadata_Extraction.R` in the scripts folder that holds the entire script for this section if raw scripts work better for you. I will walk through that R script here:
+
+1.  First, make sure you have all of the packages we will need downloaded:
+
+    ```{r}
+    # Load packages
+    packages<- c("tidyverse", "lubridate", "magick", "tesseract")
+
+    pacman::p_load(packages, character.only = TRUE); rm(packages)
+    ```
+
+2.  Next, lets start by extracting the metadata from just one of the timelapse image sequences (lets use sequence1). If all of the image files you are pulling data from are in one folder, then this section alone should work well for you! I like to keep all of the images from separate camera trap deployments in separate folders, so we will get into how to do that later.
+
+    ```{r}
+    # First, define a function to process a single image file ----------------------
+    process_image <- function(file_path) {
+      # Read the image file
+      photo <- magick::image_read(file_path)
+      
+      # Create a Tesseract engine with options to recognize specific characters and treat the input as a single line of text
+      date_time_engine <- tesseract("eng", options = list(
+        tessedit_char_whitelist = "0123456789/:APM",  # Only allow these characters
+        tessedit_pageseg_mode = '7'  # Assume a single text line
+      ))
+      
+      # Crop the section of the image that contains the date and time
+      date_time_crop <- magick::image_crop(image = photo, geometry = "330x40+2334+1480")
+      
+      # Use Tesseract OCR to extract text from the cropped image
+      date_time <- tesseract::ocr_data(date_time_crop, engine = date_time_engine)$word
+
+      # Return a tibble with the file name and extracted date-time text
+      tibble(
+        file_name = basename(file_path),  # Get the base name of the file (without the directory path)
+        date_time = date_time  # The extracted date-time text
+      )
+    }
+
+
+    # Second, get a list of all image files in the directory you are trying to extract from. This is where we are specifying using photos from sequence1 -------
+
+    image_files <- list.files("data/extracted_images/sequence1", full.names = TRUE, pattern = "\\.jpg$")
+
+
+    # Finally, apply the function to all image files and combine the results into a dataframe ----
+    results <- map_df(image_files, process_image) %>% 
+
+    # Clean and standardize the date_time strings
+      mutate(date_time = str_replace_all(date_time, "4M", "AM"),
+             date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
+             # Fix patterns like 183, 283, etc., instead of 18, 28))
+             date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+      # Parse the cleaned date_time strings into proper date-time objects
+      mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
+
+    # Print the results
+    print(results)
+    ```
