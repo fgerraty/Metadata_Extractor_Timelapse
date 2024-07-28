@@ -1,6 +1,6 @@
 # Metadata Extractor for Browning Timelapse+ Files
 
-*Gerraty, FD (fgerraty [at] ucsc.edu; frankiegerraty [at ] gmail.com)*
+*Gerraty, FD (fgerraty [at] ucsc.edu; frankiegerraty [at] gmail.com)*
 
 ------------------------------------------------------------------------
 
