@@ -81,16 +81,58 @@ There is an R script titled `Metadata_Extraction.R` in the scripts folder that h
 
 
     # Finally, apply the function to all image files and combine the results into a dataframe ----
-    results <- map_df(image_files, process_image) %>% 
-
-    # Clean and standardize the date_time strings
-      mutate(date_time = str_replace_all(date_time, "4M", "AM"),
-             date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
-             # Fix patterns like 183, 283, etc., instead of 18, 28))
-             date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
-      # Parse the cleaned date_time strings into proper date-time objects
-      mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
-
-    # Print the results
-    print(results)
+    results <- map_df(image_files, process_image) 
     ```
+
+Tesseract doesn't work perfectly for pulling the dates and times, and made some errors fairly often. For example, it often mistook "AM" for "4M". The errors seemed to occur somewhat consistently, so I usually just identified the error patterns and used the str_replace_all function to fix the errors wherever possible.
+
+```{r}
+results <- results %>% 
+
+# Clean and standardize the date_time strings
+  mutate(date_time = str_replace_all(date_time, "4M", "AM"),
+         date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
+         # Fix patterns like 183, 283, etc., instead of 18, 28))
+         date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+  # Parse the cleaned date_time strings into proper date-time objects
+  mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
+
+# Print the results
+print(results)
+```
+
+After making a few tweaks, only 2 of 82 the images ended up having issues parsing correctly to date-time format. Since I am not working with massive amounts of data on this project I plan to fix these errors manually, but if you have a better solution you should let me know!
+
+3.  Finally, if you are extracting data from multiple image sequences in separate directories, you will need to make a function to run through the above process in all of the desired directories. For us, all the directories of interest are in the folder `data/extracted_images`
+
+```{r}
+# Define a function to process all images in a given directory
+process_sequence <- function(sequence_dir) {
+  # Get a list of all image files in the directory
+  image_files <- list.files(sequence_dir, full.names = TRUE, pattern = "\\.jpg$")
+  
+  # Apply the process_image function to all image files and combine the results into a dataframe
+  results <- map_df(image_files, process_image) %>%
+    # Clean and standardize the date_time strings
+    mutate(date_time = str_replace_all(date_time, "4M", "AM"),
+           date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
+           # Fix patterns like 183, 283, etc., instead of 18, 28))
+           date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+    # Parse the cleaned date_time strings into proper date-time objects
+    mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
+  
+  return(results)
+}
+
+# List of sequence directories/folders we want to extract images from
+sequence_dirs <- list.dirs("data/extracted_images", full.names = TRUE, recursive = FALSE)
+
+# Apply the process_sequence function to all sequence directories and combine the results into a single dataframe
+all_results <- map_dfr(sequence_dirs, process_sequence)
+
+# Print the results
+print(all_results)
+
+```
+
+Our of the 171 images in the two directories, 3 of them failed to parse correctly to date-time format. So far, that is the best I have been able to do, but I am currently on the search for a better solution!
