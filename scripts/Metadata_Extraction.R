@@ -31,7 +31,7 @@ process_image <- function(file_path) {
   ))
   
   # Crop the section of the image that contains the date and time
-  date_time_crop <- magick::image_crop(image = photo, geometry = "330x40+2330+1480")
+  date_time_crop <- magick::image_crop(image = photo, geometry = "330x40+2334+1480")
   
   # Use Tesseract OCR to extract text from the cropped image
   date_time <- tesseract::ocr_data(date_time_crop, engine = date_time_engine)$word
@@ -44,7 +44,6 @@ process_image <- function(file_path) {
 }
 
 
-
 # Second, get a list of all image files in the directory you are trying to extract from ----
 image_files <- list.files("data/extracted_images/sequence1", full.names = TRUE, pattern = "\\.jpg$")
 
@@ -54,8 +53,9 @@ results <- map_df(image_files, process_image) %>%
 
 # Clean and standardize the date_time strings
   mutate(date_time = str_replace_all(date_time, "4M", "AM"),
-         date_time = str_replace_all(date_time, "3M", "PM"),
-         date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3")) %>%
+         date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
+         # Fix patterns like 183, 283, etc., instead of 18, 28))
+         date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
   # Parse the cleaned date_time strings into proper date-time objects
   mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
 
@@ -64,6 +64,39 @@ print(results)
 
 
 
-#####################################################################
-# Part 3: Extract data from multiple sequences/folders ##############
-#####################################################################
+#############################################################
+# Part 3: Extract data from multiple sequences ##############
+#############################################################
+
+#If you are extracting data from multiple image sequences in separate folders/directories, you will need to repeat the methods above several times (once for each folder). 
+
+
+# Define a function to process all images in a given directory
+process_sequence <- function(sequence_dir) {
+  # Get a list of all image files in the directory
+  image_files <- list.files(sequence_dir, full.names = TRUE, pattern = "\\.jpg$")
+  
+  # Apply the process_image function to all image files and combine the results into a dataframe
+  results <- map_df(image_files, process_image) %>%
+    # Clean and standardize the date_time strings
+    mutate(date_time = str_replace_all(date_time, "4M", "AM"),
+           date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
+           # Fix patterns like 183, 283, etc., instead of 18, 28))
+           date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+    # Parse the cleaned date_time strings into proper date-time objects
+    mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
+  
+  return(results)
+}
+
+# List of sequence directories/folders
+sequence_dirs <- list.dirs("data/extracted_images", full.names = TRUE, recursive = FALSE)
+
+# Apply the process_sequence function to all sequence directories and combine the results into a single dataframe
+all_results <- map_dfr(sequence_dirs, process_sequence)
+
+# Print the results
+print(all_results)
+
+
+#As you can see, there are a few errors that we will have to manually correct, but most of the data was extracted successfully! 
