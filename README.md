@@ -136,3 +136,7 @@ print(all_results)
 ```
 
 Our of the 171 images in the two directories, 3 of them failed to parse correctly to date-time format. So far, that is the best I have been able to do, but I am currently on the search for a better solution!
+
+# Problem 3: Identifying and Separating Timelapse- and Infrared-Triggered Photos
+
+I am still working on this section, stay tuned...
