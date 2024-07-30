@@ -103,7 +103,7 @@ print(all_results)
 
 
 ####################################################
-# Part 3: Manual Correction of Errors ##############
+# Part 4: Manual Correction of Errors ##############
 ####################################################
 
 #The process I outlined above is far from perfect, and I have built a few double-checking steps into my workflow to correct for the errors that arise. First, lets correct the values that failed when parsing to date-time. This typically occurs when tesseract OCR does not interpret the image correctly. 
@@ -158,7 +158,15 @@ all_results <- left_join(all_results, out_of_order_corrections, by = "file_name"
   mutate(date_time = if_else(!is.na(date_time_corrected), date_time_corrected, date_time),
          #re-parse date-time
          date_time_parsed = parse_date_time(date_time, "mdY HMS p")) %>%
-  select(-date_time_corrected)
+  #Remove temporary columns
+  select(-date_time_corrected, -date_time) %>% 
+  #Change parsed to "date-time"
+  rename(date_time = date_time_parsed) %>% 
+  #Pull valable metadata from file name
+  mutate(
+    ccam_num = str_extract(file_name, "(?<=CCAM)\\d+"),
+    day_num = str_extract(file_name, "(?<=D)\\d+"),
+    photo_num = str_extract(file_name, "(?<=_)\\d+(?=\\.jpg)"))
 
 #Together, these double-checking steps help to minimize errors that are introduced in the optical character recognition process. Let's save the all_results dataframe as a .csv for future use. 
 
