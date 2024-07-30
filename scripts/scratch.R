@@ -129,3 +129,20 @@ out_of_order <- all_results %>%
   mutate(is_out_of_order = date_time_parsed < lag(date_time_parsed, default = first(date_time_parsed))) %>%
   ungroup()
 
+
+
+# Example data
+temp <- tibble(
+  date_time = c(
+    "2023-10-05 09:53:37",
+    "2023-10-05 10:43:37",
+    "2023-10-05 16:33:37",
+    "2023-10-05 18:53:37")
+)
+
+# Swap the last digit '3' in the minute column with '8' when seconds are ':37'
+temp <- temp %>%
+  mutate(date_time = str_replace_all(date_time, "(\\d{2}:\\d{1})3(:37)", "\\18\\2"))
+
+# Print the results
+print(temp)

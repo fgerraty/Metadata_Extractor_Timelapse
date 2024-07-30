@@ -56,6 +56,9 @@ results <- map_df(image_files, process_image) %>%
          date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
          # Fix patterns like 183, 283, etc., instead of 18, 28))
          date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+         # Fix patterns in which 3s were interpreted as 8s in the sequence 8:37 (swap 3:37 for 8:37)
+  
+  
   # Parse the cleaned date_time strings into proper date-time objects
   mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
 
@@ -81,8 +84,15 @@ process_sequence <- function(sequence_dir) {
     # Clean and standardize the date_time strings
     mutate(date_time = str_replace_all(date_time, "4M", "AM"),
            date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
-           # Fix patterns like 183, 283, etc., instead of 18, 28))
-           date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
+           
+    #Fix errors specific to the photo sequences we are processing. In these sequences, there were two common errors: (1) There were several cases when the optical character recognition added a 3 after an 8 where there was no characters present in the second/minute columns. (2) There were several cases where 8s were incorrectly interpreted as 3s (and, because each timelapse photo occurred at XX:X8:37, I noticed the pattern.). We will fix those here     
+           
+           # Fix error patterns like 183, 283, etc., instead of 18, 28))
+           date_time = str_replace_all(date_time, "(\\d)83", "\\18"),   
+           #Fix error patterns in which 8:37 was incorrectly interpreted as 3:37
+            date_time = str_replace_all(date_time, "(\\d{2}:\\d{1})3(:37)", "\\18\\2")) %>% 
+  
+    
     # Parse the cleaned date_time strings into proper date-time objects
     mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
   
