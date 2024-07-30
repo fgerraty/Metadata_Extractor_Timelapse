@@ -55,9 +55,9 @@ results <- map_df(image_files, process_image) %>%
   mutate(date_time = str_replace_all(date_time, "4M", "AM"),
          date_time = str_replace_all(date_time, "(\\d{2}/\\d{2}/\\d{4})(\\d{2}:\\d{2}:\\d{2})([APM]+)", "\\1 \\2 \\3"),
          # Fix patterns like 183, 283, etc., instead of 18, 28))
-         date_time = str_replace_all(date_time, "(\\d)83", "\\18")) %>%   
-         # Fix patterns in which 3s were interpreted as 8s in the sequence 8:37 (swap 3:37 for 8:37)
-  
+         date_time = str_replace_all(date_time, "(\\d)83", "\\18"),  
+        #Fix error patterns in which 8:37 was incorrectly interpreted as 3:37
+        date_time = str_replace_all(date_time, "(\\d{2}:\\d{1})3(:37)", "\\18\\2")) %>% 
   
   # Parse the cleaned date_time strings into proper date-time objects
   mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
@@ -136,7 +136,7 @@ all_results <- all_results %>%
   mutate(date_time_parsed = parse_date_time(date_time, "mdY HMS p"))
 
 
-#Next, we need to screen for more sneaky errors that sneak in due to errors in the tesseract OCR character recognition system. Tesseract seems to have trouble mixing up 3s and 8s, as well as 1s and 7s. To flag errors, I first pull data that I have build into the photo file names (ccam_num is the unique carcass ID, day_num identifies the timelapse day of carcass monitoring, and phot_num is the unique photo number) and then double check that the date-time is in the correct order for the photo sequence
+#Next, we need to screen for more sneaky errors that arise due to errors in the tesseract OCR character recognition system. Tesseract seems to have trouble mixing up 3s and 8s, as well as 1s and 7s. To flag errors, I first pull data that I have build into the photo file names (ccam_num is the unique carcass ID, day_num identifies the timelapse day of carcass monitoring, and phot_num is the unique photo number) and then double check that the date-time is in the correct order for the photo sequence
 
 out_of_order <- all_results %>% 
   mutate(

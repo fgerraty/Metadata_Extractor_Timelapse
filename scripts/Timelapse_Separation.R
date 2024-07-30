@@ -35,8 +35,6 @@ most_common <- common_combinations %>%
   group_by(ccam_num) %>% 
   slice(1)
 
-print(most_common)
-
 
 # Join most_common back to all_results
 separated_results <- all_results %>%
@@ -48,8 +46,9 @@ separated_results <- all_results %>%
 
 # Create the TRUE/FALSE timelapse flag column (Timelapse = TRUE, Infrared = FALSE)
   mutate(flag_timelapse = last_digit_minute == last_digit_minute_most_common & #last digit of the minute must match exactly
-                    abs(second_value - second_value_most_common) <= 2) %>%  #seconds value can be up to 2 seconds off because the camera sometimes takes it a few seconds off. 
-         
+                    abs(second_value - second_value_most_common) <= 2) %>%  #seconds value can be up to 2 seconds off because the camera sometimes takes the timelapse photo a few seconds off. 
+  
+  #Keep relevant columns       
   select(file_name, date_time, ccam_num, day_num, flag_timelapse)
 
 
@@ -94,7 +93,6 @@ dest_paths <- separated_results$dest_path
 
 # Copy files based on the flag_timelapse value
 purrr::walk2(source_paths, dest_paths, ~ file_copy(.x, .y, overwrite = TRUE))
-
 
 
 # Copy files based on the flag_timelapse value into new folders in the "output" directory: infrared_photos or timelapse_photos
